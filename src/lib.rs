@@ -95,6 +95,7 @@ pub mod status_json;
 pub mod text;
 pub mod transcribe;
 pub mod tui;
+pub mod typesafe;
 pub mod vad;
 
 pub use cli::{
