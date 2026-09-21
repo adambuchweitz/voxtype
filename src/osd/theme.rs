@@ -4,17 +4,19 @@
 //! to a [`Palette`] used by the renderer. The active theme usually lives at
 //! `~/.local/state/omarchy/current/theme/colors.toml`, with older installs
 //! using `~/.config/omarchy/current/theme/colors.toml`. The colors file has a
-//! flat structure: `background`, `foreground`, `accent`, plus the ANSI palette
-//! `color0`..=`color15`.
+//! flat structure: `background`, `foreground`, `accent`, plus a set of hue
+//! keys written either as the ANSI palette `color0`..=`color15` or under
+//! names (`red`, `green`, `yellow`). Shipped themes use both styles, so the
+//! named keys are accepted as aliases for their ANSI slots.
 //!
 //! Mapping:
 //!
 //! - `accent` → waveform fill
 //! - `background` → window background (alpha kept from fallback)
 //! - `foreground` → held-peak tick
-//! - `color2` (ANSI green) → meter low zone
-//! - `color3` (ANSI yellow) → meter mid zone
-//! - `color1` (ANSI red) → meter high zone
+//! - `color2` / `green` → meter low zone
+//! - `color3` / `yellow` → meter mid zone
+//! - `color1` / `red` → meter high zone
 //!
 //! Themes whose ANSI red/green/yellow are off-spec (e.g. the "aether" theme
 //! maps red to a tan) inherit the theme designer's choice — that's the
@@ -42,13 +44,25 @@ pub fn omarchy_theme_dir() -> Option<PathBuf> {
     omarchy_theme_dirs()?.into_iter().next()
 }
 
+/// Omarchy themes write `colors.toml` in one of two key styles: the ANSI
+/// `color0`..=`color15` set, or named keys (`red`, `green`, `yellow`). Both
+/// are in active use across shipped themes, so each ANSI field accepts its
+/// named equivalent as an alias. The names map to their ANSI slots: red is
+/// 1, green is 2, yellow is 3.
+///
+/// Without the aliases a named-key theme parses fine but leaves every meter
+/// field `None`, so the palette silently falls back to the built-in colors
+/// and the theme appears not to apply at all.
 #[derive(Deserialize, Default)]
 struct OmarchyColors {
     background: Option<String>,
     foreground: Option<String>,
     accent: Option<String>,
+    #[serde(alias = "red")]
     color1: Option<String>,
+    #[serde(alias = "green")]
     color2: Option<String>,
+    #[serde(alias = "yellow")]
     color3: Option<String>,
 }
 
@@ -217,6 +231,43 @@ mod tests {
         assert_eq!(p.meter_high, parse_hex("#A48364").unwrap());
         assert_eq!(p.meter_low, parse_hex("#F8E7AE").unwrap());
         assert_eq!(p.meter_mid, parse_hex("#FEE88B").unwrap());
+    }
+
+    #[test]
+    fn palette_from_named_keys_sample() {
+        // Real values from ~/.config/omarchy/themes/midnight/colors.toml,
+        // which uses named keys instead of the ANSI set.
+        let toml_src = r##"
+            accent = "#6E89C2"
+            background = "#121515"
+            foreground = "#FCFBF8"
+            red = "#D35F5F"
+            green = "#8A9A7B"
+            yellow = "#FFC107"
+        "##;
+        let c: OmarchyColors = toml::from_str(toml_src).unwrap();
+        let p = palette_from(c);
+        assert_eq!(p.meter_high, parse_hex("#D35F5F").unwrap());
+        assert_eq!(p.meter_low, parse_hex("#8A9A7B").unwrap());
+        assert_eq!(p.meter_mid, parse_hex("#FFC107").unwrap());
+    }
+
+    #[test]
+    fn named_keys_do_not_fall_back() {
+        // Regression guard for the original bug: a named-key theme used to
+        // parse cleanly while leaving every meter field unset, so the whole
+        // palette silently reverted to the built-in colors.
+        let toml_src = r##"
+            red = "#D35F5F"
+            green = "#8A9A7B"
+            yellow = "#FFC107"
+        "##;
+        let c: OmarchyColors = toml::from_str(toml_src).unwrap();
+        let p = palette_from(c);
+        let fb = Palette::fallback();
+        assert_ne!(p.meter_high, fb.meter_high);
+        assert_ne!(p.meter_low, fb.meter_low);
+        assert_ne!(p.meter_mid, fb.meter_mid);
     }
 
     #[test]
