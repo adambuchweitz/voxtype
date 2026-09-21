@@ -41,6 +41,10 @@ ShellRoot {
         id: stateReader
     }
 
+    VT.AlertReader {
+        id: alerts
+    }
+
     VT.AudioBridge {
         id: audio
     }
@@ -55,6 +59,8 @@ ShellRoot {
         osdSuppressed: stateReader.osdSuppressed
         audio: audio
         style: osdStyle
+        alertActive: alerts.active
+        alertMessage: alerts.message
     }
 
     EnginePicker {

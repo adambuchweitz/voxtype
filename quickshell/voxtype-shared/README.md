@@ -49,6 +49,39 @@ Signals:
 
 - `stateChanged(string newState)` — fired on every transition.
 
+### `AlertReader`
+
+Watches `$XDG_RUNTIME_DIR/voxtype/alert` and reports whether a degraded
+condition should be shown on the OSD. The file is created and removed
+rather than rewritten, so presence alone means "alert"; its first line is
+the text the OSD displays.
+
+The daemon never writes this file. It exists for the parts that sit
+outside the daemon and know something the daemon can't: a
+`post_process.command` that fell back to a slower engine, a remote
+transcription endpoint that stopped answering, a preload that failed.
+Those keep working, just worse, which is exactly the failure mode nobody
+notices.
+
+```sh
+printf 'Cleanup GPU offline - local CPU fallback' > "$XDG_RUNTIME_DIR/voxtype/alert"
+rm -f "$XDG_RUNTIME_DIR/voxtype/alert"   # clear it
+```
+
+Write the marker with write-then-rename so the watcher never reads a
+half-written line.
+
+Public properties:
+
+| Property    | Default                          | Purpose                            |
+|-------------|----------------------------------|------------------------------------|
+| `alertPath` | `$XDG_RUNTIME_DIR/voxtype/alert` | Override for tests / custom setups |
+| `active`    | `false`                          | True while the marker exists       |
+| `message`   | `""`                             | First line of the marker           |
+
+`OsdSurface` draws this as a warning bar above the card on every OSD it
+shows, including when a custom QML package has replaced the card.
+
 ### `AudioBridge`
 
 Wraps the `voxtype-audio-bridge` sidecar binary. The bridge reads the

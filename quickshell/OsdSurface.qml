@@ -35,6 +35,16 @@ PanelWindow {
     /// daemon's reported state.
     property bool osdSuppressed: false
 
+    /// True while an alert marker is present. Wired by the parent from
+    /// VT.AlertReader.active. Draws a warning bar on every OSD until the
+    /// marker is cleared, deliberately loud: the conditions it reports
+    /// (a dead remote, a degraded fallback) are otherwise invisible
+    /// because dictation keeps working, just worse.
+    property bool alertActive: false
+
+    /// Text shown in the warning bar. Wired from VT.AlertReader.message.
+    property string alertMessage: ""
+
     /// The audio bridge instance whose frameReceived signal drives the
     /// waveform. Passed in by the parent so it's shared with sibling
     /// widgets that also want VAD / peak data.
@@ -75,6 +85,29 @@ PanelWindow {
       : daemonState === "streaming"    ? panel._styleColor("streaming", VT.Theme.streamingColor)
       : daemonState === "transcribing" ? panel._styleColor("transcribing", VT.Theme.transcribingColor)
       :                                  panel._styleColor("idle", VT.Theme.idleColor)
+
+    // Alert bar colors, all resolved through the active palette so the
+    // warning follows the configured theme instead of a fixed amber.
+    // Both are forced opaque: the palette's background and foreground
+    // carry alpha for the glassy card, which would wash out a bar whose
+    // whole job is to be read at a glance.
+    // Assigning to a `color` property is what converts the palette's
+    // string into something with .r/.g/.b to read, so each role lands in
+    // one before it gets used in the math below.
+    readonly property color _alertFillRaw: panel._styleColor("warning", "#F2CC4D")
+    readonly property color _alertOnDark: panel._styleColor("foreground", "#EBEBF2")
+    readonly property color _alertOnLight: panel._styleColor("background", "#1A1A1F")
+
+    readonly property color alertFill: Qt.rgba(_alertFillRaw.r, _alertFillRaw.g, _alertFillRaw.b, 1.0)
+
+    // Pick whichever of the palette's two text colors actually reads on
+    // the fill. Themes are free to make `warning` dark, and a light theme
+    // inverts the usual amber-with-dark-text assumption entirely.
+    readonly property color alertInk: {
+        const luminance = 0.2126 * alertFill.r + 0.7152 * alertFill.g + 0.0722 * alertFill.b;
+        const pick = luminance > 0.55 ? panel._alertOnLight : panel._alertOnDark;
+        return Qt.rgba(pick.r, pick.g, pick.b, 1.0);
+    }
 
     // Ring of recent per-frame peaks (0.0..1.0). Capacity = 3 s @ 100 Hz.
     // Stored as a plain array; we shift() when full to keep newest-on-right.
@@ -444,6 +477,60 @@ PanelWindow {
             Behavior on border.width { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
             Behavior on width { NumberAnimation { duration: 145; easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: 145; easing.type: Easing.OutCubic } }
+        }
+    }
+
+    // Degraded-mode warning bar. Sits above the card in every layout and
+    // ignores `customActive` on purpose: a custom QML package replaces the
+    // card, but it must not be able to hide an alert.
+    Rectangle {
+        id: alertBar
+        z: 100
+        visible: panel.alertActive && opacity > 0.01
+        width: alertRow.implicitWidth + 26
+        height: alertRow.implicitHeight + 12
+        // Follow the card's corner idiom so a square-cornered theme
+        // doesn't get a lone pill floating above it, but never round
+        // further than a pill (orb layout's radius is half its width).
+        radius: Math.min(panel._cardRadius(), height / 2)
+        anchors.horizontalCenter: card.horizontalCenter
+        anchors.bottom: card.top
+        anchors.bottomMargin: 12
+        color: panel.alertFill
+        opacity: panel.alertActive ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+        // Slow breathe rather than a blink: legible at a glance without
+        // fighting the waveform for attention on every single dictation.
+        SequentialAnimation on scale {
+            running: alertBar.visible
+            loops: Animation.Infinite
+            NumberAnimation { to: 1.04; duration: 700; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 1.00; duration: 700; easing.type: Easing.InOutSine }
+        }
+
+        Row {
+            id: alertRow
+            anchors.centerIn: parent
+            spacing: 7
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "⚠"
+                color: panel.alertInk
+                font.pixelSize: 15
+                font.bold: true
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: panel.alertMessage
+                color: panel.alertInk
+                font.pixelSize: 13
+                font.bold: true
+                elide: Text.ElideRight
+                maximumLineCount: 1
+            }
         }
     }
 
