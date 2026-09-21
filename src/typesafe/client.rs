@@ -118,8 +118,9 @@ pub struct ModelCard {
     pub release_date: String,
 }
 
-/// `GET /v1/models` is documented by its SDK return type rather than its wire
-/// envelope, so accept a bare array or either common wrapper.
+/// The live endpoint returns `{"models": [...]}`, confirmed against the API.
+/// The bare-array and `data` variants stay as cheap insurance, since the wire
+/// envelope is not in the published docs and could change.
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum ModelList {
@@ -409,8 +410,11 @@ fn extract_detail(body: &str) -> Option<String> {
         return None;
     }
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(body) {
+        // `detail.message` first: that is the shape the live API returns, e.g.
+        // {"detail": {"error_type": "authentication_error", "message": "..."}}.
         for path in [
-            &["error", "message"][..],
+            &["detail", "message"][..],
+            &["error", "message"],
             &["message"],
             &["detail"],
             &["error"],
@@ -586,6 +590,14 @@ mod tests {
 
     #[test]
     fn error_details_are_pulled_from_common_shapes() {
+        // The shape the live API actually returns.
+        assert_eq!(
+            extract_detail(
+                r#"{"detail":{"error_type":"authentication_error","message":"Must supply an API key!"}}"#
+            )
+            .as_deref(),
+            Some("Must supply an API key!")
+        );
         assert_eq!(
             extract_detail(r#"{"error":{"message":"bad question"}}"#).as_deref(),
             Some("bad question")
