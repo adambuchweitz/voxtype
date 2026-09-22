@@ -274,6 +274,8 @@ pub struct OsdPackageManifest {
     pub compatibility: Option<String>,
     pub palette: Option<OsdPaletteSource>,
     pub layout: Option<OsdLayout>,
+    /// Size multiplier for the host card; see `OsdConfig::card_scale`.
+    pub card_scale: Option<f32>,
     pub colors: BTreeMap<String, String>,
     pub qml_entry: Option<PathBuf>,
     pub frame: Option<OsdFrameConfig>,
@@ -289,6 +291,7 @@ impl Default for OsdPackageManifest {
             compatibility: None,
             palette: None,
             layout: None,
+            card_scale: None,
             colors: BTreeMap::new(),
             qml_entry: None,
             frame: None,
@@ -347,6 +350,12 @@ pub struct OsdConfig {
     pub palette: Option<OsdPaletteSource>,
     /// Layout preset for the Quickshell OSD host.
     pub layout: OsdLayout,
+    /// Size multiplier applied to the Quickshell host card in every
+    /// layout. 1.0 keeps each layout's built-in size; 0.5 halves both
+    /// dimensions (orb diameter 168 -> 84), 2.0 doubles them. Recipe
+    /// layers are positioned fractionally, so they scale with the card.
+    /// Clamped by the renderer to 0.25..=4.0.
+    pub card_scale: f32,
     /// Explicit third-party package path. QML code in this path is trusted.
     pub plugin_path: Option<PathBuf>,
     /// Quickshell host-frame styling for no-code recipes.
@@ -372,6 +381,7 @@ impl Default for OsdConfig {
             style: "default".to_string(),
             palette: None,
             layout: OsdLayout::default(),
+            card_scale: 1.0,
             plugin_path: None,
             frame: OsdFrameConfig::default(),
             visual: OsdVisualConfig::default(),

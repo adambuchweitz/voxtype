@@ -251,7 +251,10 @@ fn semantic_colors(p: Palette) -> BTreeMap<String, String> {
     colors.insert("success".to_string(), color_to_css(p.meter_low));
     colors.insert("warning".to_string(), color_to_css(p.meter_mid));
     colors.insert("error".to_string(), color_to_css(p.meter_high));
-    colors.insert("recording".to_string(), color_to_css(p.meter_high));
+    // Recording is an active state, so use the theme's primary accent rather
+    // than the danger color. Errors and hot meter levels keep their warning
+    // treatment through the separate `error` role.
+    colors.insert("recording".to_string(), color_to_css(p.accent));
     colors.insert("streaming".to_string(), color_to_css(p.accent));
     colors.insert("transcribing".to_string(), color_to_css(p.meter_mid));
     colors.insert(
@@ -286,6 +289,13 @@ mod tests {
         assert!(style.package_dir.is_none());
         assert!(style.custom_qml.is_none());
         assert!(style.colors.contains_key("accent"));
+    }
+
+    #[test]
+    fn recording_color_follows_the_palette_accent() {
+        let colors = semantic_colors(Palette::fallback());
+        assert_eq!(colors.get("recording"), colors.get("accent"));
+        assert_ne!(colors.get("recording"), colors.get("error"));
     }
 
     #[test]

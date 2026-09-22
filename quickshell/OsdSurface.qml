@@ -213,7 +213,7 @@ PanelWindow {
         if (layout === "wide") return Math.max(VT.Theme.defaultWidthPx, 560);
         if (layout === "minimal") return Math.min(VT.Theme.defaultWidthPx, 260);
         if (layout === "tile") return 176;
-        if (layout === "orb") return 168;
+        if (layout === "orb") return 84;
         return VT.Theme.defaultWidthPx;
     }
 
@@ -221,7 +221,7 @@ PanelWindow {
         const layout = _styleLayout();
         if (layout === "minimal") return 48;
         if (layout === "tile") return 176;
-        if (layout === "orb") return 168;
+        if (layout === "orb") return 84;
         return 72;
     }
 

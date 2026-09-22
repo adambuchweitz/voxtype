@@ -40,7 +40,7 @@ QtObject {
                 "success": "#4DD973",
                 "warning": "#F2CC4D",
                 "error": "#F2594D",
-                "recording": "#F2594D",
+                "recording": "#66C7FF",
                 "streaming": "#66C7FF",
                 "transcribing": "#F2CC4D",
                 "idle": "rgba(235, 235, 242, 0.750)"

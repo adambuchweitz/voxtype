@@ -19,7 +19,7 @@ Public properties:
 | `bgColor`           | rgba(0.10, 0.10, 0.12, 0.85)           | Translucent card background              |
 | `accentColor`       | rgba(0.40, 0.78, 1.00, 1.0)            | Waveform fill, primary action            |
 | `idleColor`         | `#abb2bf`                              | Idle-state indicator                     |
-| `recordingColor`    | `#e06c75`                              | Recording-state indicator                |
+| `recordingColor`    | bound to `accentColor`                 | Recording-state indicator                |
 | `streamingColor`    | `#61afef`                              | Streaming-state indicator                |
 | `transcribingColor` | `#e5c07b`                              | Transcribing-state indicator             |
 | `textColor`         | `#dcdfe4`                              | Foreground text                          |

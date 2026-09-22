@@ -33,9 +33,9 @@ QtObject {
     /// daemon isn't actively recording). Matches the existing POC.
     property color idleColor: "#abb2bf"
 
-    /// Recording-state indicator color. Voxtype's signature
-    /// red/orange used for "we are capturing your voice right now."
-    property color recordingColor: "#e06c75"
+    /// Recording-state indicator color. Defaults to the primary accent so
+    /// the active-state indicator blends with the selected theme.
+    property color recordingColor: theme.accentColor
 
     /// Streaming-state indicator color (live partial-token output).
     property color streamingColor: "#61afef"

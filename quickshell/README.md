@@ -58,7 +58,7 @@ qs -p quickshell
 ```
 
 Press your voxtype hotkey and watch the screen edge: the OSD card appears
-with a red tint and live waveform during `recording`, blue during
+with the theme accent tint and live waveform during `recording` and
 `streaming`, amber during `transcribing`, and disappears at `idle`.
 
 ## Toggling the popup widgets
